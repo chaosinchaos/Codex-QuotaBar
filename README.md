@@ -21,7 +21,7 @@ Codex QuotaBar 是一个原生 macOS 菜单栏小工具，用来显示 Codex 的
 
 - macOS 14 或更高版本
 - 已安装并登录 Codex
-- Xcode 或 Swift 工具链（仅从源码构建时需要）
+- 普通使用不需要 Xcode；只有从源码构建时才需要 Xcode 或 Swift 工具链
 
 ## 使用方式
 
@@ -97,7 +97,7 @@ Clicking the menu bar item shows:
 
 - macOS 14 or later
 - Codex installed and signed in
-- Xcode or Swift toolchain, only if building from source
+- Xcode is not required to run the packaged app. It is only needed if you want to build from source.
 
 ## Usage
 
