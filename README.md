@@ -31,7 +31,8 @@ Codex QuotaBar 是一个原生 macOS 菜单栏小工具，用来显示 Codex 的
 1. 解压下载的 zip。
 2. 将 `CodexQuotaBar.app` 拖到“应用程序”文件夹。
 3. 首次打开时，如果 macOS 提示无法验证开发者，请按住 Control 右键点击 App，选择“打开”。
-4. App 启动后会出现在菜单栏，不会显示 Dock 图标。
+4. 如果仍然被拦截，请打开“系统设置”→“隐私与安全性”，在安全提示里点击“仍要打开”。
+5. App 启动后会出现在菜单栏，不会显示 Dock 图标。
 
 ## 从源码构建
 
@@ -106,7 +107,8 @@ If you have a packaged `CodexQuotaBar.app`:
 1. Unzip the downloaded archive.
 2. Drag `CodexQuotaBar.app` to Applications.
 3. On first launch, if macOS blocks the app because the developer cannot be verified, Control-click the app and choose “Open”.
-4. The app runs in the menu bar and does not show a Dock icon.
+4. If macOS still blocks it, open System Settings → Privacy & Security, then click “Open Anyway” in the security prompt.
+5. The app runs in the menu bar and does not show a Dock icon.
 
 ## Build from source
 
