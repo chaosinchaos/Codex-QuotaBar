@@ -12,8 +12,7 @@ private final class StatusController: NSObject {
     private let service = CodexUsageService()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
-    private let primaryItem = NSMenuItem(title: "5 小时额度：读取中…", action: nil, keyEquivalent: "")
-    private let secondaryItem = NSMenuItem(title: "一周额度：读取中…", action: nil, keyEquivalent: "")
+    private let weeklyItem = NSMenuItem(title: "一周额度：读取中…", action: nil, keyEquivalent: "")
     private let resetCountItem = NSMenuItem(title: "使用限额重置次数：0次", action: nil, keyEquivalent: "")
     private let updatedItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private var refreshTimer: Timer?
@@ -23,8 +22,7 @@ private final class StatusController: NSObject {
         statusItem.button?.title = "⌁ --"
         statusItem.button?.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
 
-        primaryItem.isEnabled = false
-        secondaryItem.isEnabled = false
+        weeklyItem.isEnabled = false
         resetCountItem.isEnabled = false
         updatedItem.isEnabled = false
         updatedItem.attributedTitle = NSAttributedString(
@@ -32,8 +30,7 @@ private final class StatusController: NSObject {
             attributes: [.foregroundColor: NSColor.secondaryLabelColor]
         )
 
-        menu.addItem(primaryItem)
-        menu.addItem(secondaryItem)
+        menu.addItem(weeklyItem)
         menu.addItem(resetCountItem)
         menu.addItem(updatedItem)
         menu.addItem(.separator())
@@ -79,9 +76,8 @@ private final class StatusController: NSObject {
     }
 
     private func show(snapshot: UsageSnapshot) {
-        statusItem.button?.title = "⌁ 5h \(snapshot.primary.remainingPercent)% · 周 \(snapshot.secondary.remainingPercent)%"
-        primaryItem.title = snapshot.primary.menuTitle("5 小时额度")
-        secondaryItem.title = snapshot.secondary.menuTitle("一周额度")
+        statusItem.button?.title = "⌁ 周 \(snapshot.weekly.remainingPercent)%"
+        weeklyItem.title = snapshot.weekly.menuTitle("一周额度")
         resetCountItem.title = "使用限额重置次数：\(snapshot.resetCount)次"
         updatedItem.attributedTitle = NSAttributedString(
             string: "更新于 \(Date.now.formatted(date: .omitted, time: .shortened))",
@@ -91,8 +87,7 @@ private final class StatusController: NSObject {
 
     private func show(error: String) {
         statusItem.button?.title = "⌁ !"
-        primaryItem.title = error
-        secondaryItem.title = "请在 Codex 中登录后再次刷新。"
+        weeklyItem.title = error
         updatedItem.attributedTitle = NSAttributedString(
             string: "未能更新用量",
             attributes: [.foregroundColor: NSColor.secondaryLabelColor]
@@ -101,8 +96,7 @@ private final class StatusController: NSObject {
 }
 
 private struct UsageSnapshot {
-    let primary: UsageWindow
-    let secondary: UsageWindow
+    let weekly: UsageWindow
     let resetCount: Int
 }
 
@@ -157,12 +151,11 @@ private struct CodexUsageService {
         }
 
         let payload = try JSONDecoder().decode(UsagePayload.self, from: data)
-        guard let primary = payload.rateLimit.primaryWindow, let secondary = payload.rateLimit.secondaryWindow else {
+        guard let weekly = payload.rateLimit.primaryWindow else {
             throw QuotaError.invalidResponse
         }
         return UsageSnapshot(
-            primary: primary.usageWindow,
-            secondary: secondary.usageWindow,
+            weekly: weekly.usageWindow,
             resetCount: payload.rateLimitResetCredits?.availableCount ?? 0
         )
     }
@@ -199,8 +192,7 @@ private struct UsagePayload: Decodable {
     }
     struct RateLimit: Decodable {
         let primaryWindow: Window?
-        let secondaryWindow: Window?
-        enum CodingKeys: String, CodingKey { case primaryWindow = "primary_window"; case secondaryWindow = "secondary_window" }
+        enum CodingKeys: String, CodingKey { case primaryWindow = "primary_window" }
     }
     struct Window: Decodable {
         let usedPercent: Double
