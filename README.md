@@ -4,17 +4,16 @@
 
 还在一次又一次地点进设置菜单里看剩余额度？
 
-Codex QuotaBar 是一个原生 macOS 菜单栏小工具，用来显示 Codex 的 5 小时额度和一周额度剩余百分比。
+Codex QuotaBar 是一个原生 macOS 菜单栏小工具，用来显示 Codex 的一周额度剩余百分比。
 
 它会在菜单栏显示类似：
 
 ```text
-⌁ 5h 85% · 周 98%
+⌁ 周 98%
 ```
 
 点击菜单栏项目后，还可以查看：
 
-- 5 小时额度剩余百分比与重置时间
 - 一周额度剩余百分比与重置时间
 - 使用限额重置次数，例如 `使用限额重置次数：2次`
 - 最近更新时间
@@ -80,17 +79,16 @@ https://chatgpt.com/backend-api/wham/usage
 
 ## English
 
-Codex QuotaBar is a native macOS menu bar utility that shows the remaining percentage of your Codex 5-hour and weekly quota.
+Codex QuotaBar is a native macOS menu bar utility that shows the remaining percentage of your Codex weekly quota.
 
 It displays a compact status item like:
 
 ```text
-⌁ 5h 85% · W 98%
+⌁ W 98%
 ```
 
 Clicking the menu bar item shows:
 
-- remaining 5-hour quota and reset time
 - remaining weekly quota and reset time
 - usage limit reset count, for example `使用限额重置次数：2次`
 - last update time

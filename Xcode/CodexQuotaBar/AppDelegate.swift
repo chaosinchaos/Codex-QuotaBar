@@ -8,7 +8,6 @@ struct CodexQuotaBarApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            Text(quota.fiveHourMenuText)
             Text(quota.weeklyMenuText)
             Text(quota.resetCountText)
             Text(quota.updateText)
@@ -56,13 +55,8 @@ final class QuotaModel: ObservableObject {
     }
 
     var menuBarText: String {
-        if let snapshot { return "⌁ 5h \(snapshot.fiveHourRemaining)% · 周 \(snapshot.weeklyRemaining)%" }
+        if let snapshot { return "⌁ 周 \(snapshot.weeklyRemaining)%" }
         return isRefreshing ? "⌁ …" : "⌁ !"
-    }
-
-    var fiveHourMenuText: String {
-        guard let snapshot else { return "5 小时额度：暂不可用" }
-        return "5 小时额度：剩余 \(snapshot.fiveHourRemaining)% · \(snapshot.fiveHourReset) 重置"
     }
 
     var weeklyMenuText: String {
@@ -104,9 +98,7 @@ final class QuotaModel: ObservableObject {
 }
 
 private struct QuotaSnapshot {
-    let fiveHourRemaining: Int
     let weeklyRemaining: Int
-    let fiveHourReset: String
     let weeklyReset: String
     let resetCount: Int
 }
@@ -128,11 +120,9 @@ private enum CodexUsageClient {
         guard let response = response as? HTTPURLResponse, (200...299).contains(response.statusCode) else { throw URLError(.badServerResponse) }
         let usageResponse = try JSONDecoder().decode(UsageResponse.self, from: data)
         let rateLimit = usageResponse.rateLimit
-        guard let fiveHour = rateLimit.primaryWindow, let weekly = rateLimit.secondaryWindow else { throw URLError(.cannotParseResponse) }
+        guard let weekly = rateLimit.primaryWindow else { throw URLError(.cannotParseResponse) }
         return QuotaSnapshot(
-            fiveHourRemaining: max(0, 100 - Int(fiveHour.usedPercent.rounded())),
             weeklyRemaining: max(0, 100 - Int(weekly.usedPercent.rounded())),
-            fiveHourReset: Date(timeIntervalSince1970: fiveHour.resetAt).formatted(date: .omitted, time: .shortened),
             weeklyReset: Date(timeIntervalSince1970: weekly.resetAt).formatted(date: .abbreviated, time: .shortened),
             resetCount: usageResponse.rateLimitResetCredits?.availableCount ?? 0
         )
@@ -157,8 +147,7 @@ private struct UsageResponse: Decodable {
     }
     struct RateLimit: Decodable {
         let primaryWindow: UsageWindow?
-        let secondaryWindow: UsageWindow?
-        enum CodingKeys: String, CodingKey { case primaryWindow = "primary_window"; case secondaryWindow = "secondary_window" }
+        enum CodingKeys: String, CodingKey { case primaryWindow = "primary_window" }
     }
     struct UsageWindow: Decodable {
         let usedPercent: Double
