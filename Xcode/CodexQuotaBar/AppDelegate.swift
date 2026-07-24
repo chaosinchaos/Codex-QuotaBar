@@ -10,6 +10,7 @@ struct CodexQuotaBarApp: App {
         MenuBarExtra {
             Text(quota.weeklyMenuText)
             Text(quota.resetCountText)
+            Text(quota.resetExpiryText)
             Text(quota.updateText)
                 .foregroundStyle(.secondary)
 
@@ -69,6 +70,14 @@ final class QuotaModel: ObservableObject {
         return "使用限额重置次数：\(snapshot.resetCount)次"
     }
 
+    var resetExpiryText: String {
+        guard let snapshot else { return "最早 Full reset 到期：暂不可用" }
+        guard let expiration = snapshot.nearestFullResetExpiration else {
+            return "最早 Full reset 到期：暂无"
+        }
+        return "最早 Full reset 到期：\(expiration.formatted(date: .abbreviated, time: .shortened))"
+    }
+
     var updateText: String {
         if let updatedAt { return "更新于 \(updatedAt.formatted(date: .omitted, time: .shortened))" }
         return lastError ?? "正在读取额度…"
@@ -101,6 +110,7 @@ private struct QuotaSnapshot {
     let weeklyRemaining: Int
     let weeklyReset: String
     let resetCount: Int
+    let nearestFullResetExpiration: Date?
 }
 
 private enum CodexUsageClient {
@@ -121,11 +131,46 @@ private enum CodexUsageClient {
         let usageResponse = try JSONDecoder().decode(UsageResponse.self, from: data)
         let rateLimit = usageResponse.rateLimit
         guard let weekly = rateLimit.primaryWindow else { throw URLError(.cannotParseResponse) }
+        let nearestFullResetExpiration = try? await fetchNearestFullResetExpiration(auth: auth)
         return QuotaSnapshot(
             weeklyRemaining: max(0, 100 - Int(weekly.usedPercent.rounded())),
             weeklyReset: Date(timeIntervalSince1970: weekly.resetAt).formatted(date: .abbreviated, time: .shortened),
-            resetCount: usageResponse.rateLimitResetCredits?.availableCount ?? 0
+            resetCount: usageResponse.rateLimitResetCredits?.availableCount ?? 0,
+            nearestFullResetExpiration: nearestFullResetExpiration
         )
+    }
+
+    private static func fetchNearestFullResetExpiration(auth: AuthFile) async throws -> Date? {
+        var request = URLRequest(url: URL(string: "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits")!)
+        request.setValue("Bearer \(auth.tokens.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue(auth.tokens.accountID, forHTTPHeaderField: "ChatGPT-Account-Id")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("https://chatgpt.com", forHTTPHeaderField: "Origin")
+        request.setValue("https://chatgpt.com/", forHTTPHeaderField: "Referer")
+        request.setValue("CodexQuotaBar/2.0", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 20
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let response = response as? HTTPURLResponse, (200...299).contains(response.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        let payload = try JSONDecoder().decode(ResetCreditDetailsResponse.self, from: data)
+        return payload.credits
+            .filter { $0.status == "available" && $0.resetType == "codex_rate_limits" }
+            .compactMap { $0.expiresAt.flatMap(parseISO8601Date) }
+            .min()
+    }
+
+    private static func parseISO8601Date(_ value: String) -> Date? {
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = fractionalFormatter.date(from: value) {
+            return date
+        }
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: value)
     }
 }
 
@@ -157,5 +202,21 @@ private struct UsageResponse: Decodable {
     struct RateLimitResetCredits: Decodable {
         let availableCount: Int
         enum CodingKeys: String, CodingKey { case availableCount = "available_count" }
+    }
+}
+
+private struct ResetCreditDetailsResponse: Decodable {
+    let credits: [Credit]
+
+    struct Credit: Decodable {
+        let resetType: String
+        let status: String
+        let expiresAt: String?
+
+        enum CodingKeys: String, CodingKey {
+            case resetType = "reset_type"
+            case status
+            case expiresAt = "expires_at"
+        }
     }
 }
