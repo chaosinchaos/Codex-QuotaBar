@@ -3,8 +3,16 @@ import Foundation
 import SwiftUI
 
 @main
+@MainActor
 struct CodexQuotaBarApp: App {
-    @StateObject private var quota = QuotaModel()
+    @StateObject private var quota: QuotaModel
+    @StateObject private var scheduler: FullResetScheduler
+
+    init() {
+        let scheduler = FullResetScheduler()
+        _scheduler = StateObject(wrappedValue: scheduler)
+        _quota = StateObject(wrappedValue: QuotaModel(scheduler: scheduler))
+    }
 
     var body: some Scene {
         MenuBarExtra {
@@ -13,6 +21,14 @@ struct CodexQuotaBarApp: App {
             Text(quota.resetExpiryText)
             Text(quota.updateText)
                 .foregroundStyle(.secondary)
+
+            Divider()
+
+            Toggle("到期前自动使用 Full reset", isOn: $scheduler.enabled)
+            Text(scheduler.status).foregroundStyle(.secondary)
+            if let lastSuccess = scheduler.lastSuccess {
+                Text(lastSuccess).foregroundStyle(.secondary)
+            }
 
             Divider()
 
@@ -43,8 +59,13 @@ final class QuotaModel: ObservableObject {
     @Published private(set) var isRefreshing = false
     @Published private(set) var lastError: String?
     @Published private(set) var updatedAt: Date?
+    private let scheduler: FullResetScheduler
 
-    init() {
+    init(scheduler: FullResetScheduler) {
+        self.scheduler = scheduler
+        scheduler.onRefresh = { [weak self] in
+            Task { await self?.refresh() }
+        }
         Task { [weak self] in
             guard let self else { return }
             await self.refresh()
@@ -94,6 +115,9 @@ final class QuotaModel: ObservableObject {
                 snapshot = newSnapshot
                 updatedAt = .now
                 lastError = nil
+                scheduler.update(accountID: newSnapshot.accountID,
+                                 credit: newSnapshot.nearestFullResetCredit,
+                                 detailsAvailable: newSnapshot.resetDetailsAvailable)
                 return
             } catch {
                 guard attempt < 2 else {
@@ -107,10 +131,13 @@ final class QuotaModel: ObservableObject {
 }
 
 private struct QuotaSnapshot {
+    let accountID: String
     let weeklyRemaining: Int
     let weeklyReset: String
     let resetCount: Int
-    let nearestFullResetExpiration: Date?
+    let nearestFullResetCredit: FullResetCredit?
+    let resetDetailsAvailable: Bool
+    var nearestFullResetExpiration: Date? { nearestFullResetCredit?.expiresAt }
 }
 
 private enum CodexUsageClient {
@@ -131,16 +158,23 @@ private enum CodexUsageClient {
         let usageResponse = try JSONDecoder().decode(UsageResponse.self, from: data)
         let rateLimit = usageResponse.rateLimit
         guard let weekly = rateLimit.primaryWindow else { throw URLError(.cannotParseResponse) }
-        let nearestFullResetExpiration = try? await fetchNearestFullResetExpiration(auth: auth)
+        var nearestFullResetCredit: FullResetCredit?
+        var resetDetailsAvailable = false
+        do {
+            nearestFullResetCredit = try await fetchNearestFullResetCredit(auth: auth)
+            resetDetailsAvailable = true
+        } catch { /* Retain a saved schedule during temporary details-service failures. */ }
         return QuotaSnapshot(
+            accountID: auth.tokens.accountID,
             weeklyRemaining: max(0, 100 - Int(weekly.usedPercent.rounded())),
             weeklyReset: Date(timeIntervalSince1970: weekly.resetAt).formatted(date: .abbreviated, time: .shortened),
             resetCount: usageResponse.rateLimitResetCredits?.availableCount ?? 0,
-            nearestFullResetExpiration: nearestFullResetExpiration
+            nearestFullResetCredit: nearestFullResetCredit,
+            resetDetailsAvailable: resetDetailsAvailable
         )
     }
 
-    private static func fetchNearestFullResetExpiration(auth: AuthFile) async throws -> Date? {
+    private static func fetchNearestFullResetCredit(auth: AuthFile) async throws -> FullResetCredit? {
         var request = URLRequest(url: URL(string: "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits")!)
         request.setValue("Bearer \(auth.tokens.accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue(auth.tokens.accountID, forHTTPHeaderField: "ChatGPT-Account-Id")
@@ -157,8 +191,11 @@ private enum CodexUsageClient {
         let payload = try JSONDecoder().decode(ResetCreditDetailsResponse.self, from: data)
         return payload.credits
             .filter { $0.status == "available" && $0.resetType == "codex_rate_limits" }
-            .compactMap { $0.expiresAt.flatMap(parseISO8601Date) }
-            .min()
+            .compactMap { credit -> FullResetCredit? in
+                guard let expiry = credit.expiresAt.flatMap(parseISO8601Date), expiry > .now else { return nil }
+                return FullResetCredit(id: credit.id, expiresAt: expiry)
+            }
+            .min { $0.expiresAt < $1.expiresAt }
     }
 
     private static func parseISO8601Date(_ value: String) -> Date? {
@@ -209,11 +246,13 @@ private struct ResetCreditDetailsResponse: Decodable {
     let credits: [Credit]
 
     struct Credit: Decodable {
+        let id: String
         let resetType: String
         let status: String
         let expiresAt: String?
 
         enum CodingKeys: String, CodingKey {
+            case id
             case resetType = "reset_type"
             case status
             case expiresAt = "expires_at"

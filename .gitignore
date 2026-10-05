@@ -18,3 +18,15 @@ xcuserdata/
 
 # macOS extended attribute sidecars that can appear in archives
 __MACOSX/
+
+# Local credentials, preferences, logs and debugging artifacts
+.env
+.env.*
+!.env.example
+.codex/
+auth.json
+*.local.json
+*.local.plist
+*.log
+*.dSYM/
+*.xcarchive/

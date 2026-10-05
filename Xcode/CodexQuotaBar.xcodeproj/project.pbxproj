@@ -5,17 +5,19 @@
   objectVersion = 56;
   objects = {
     A00000000000000000000001 = {isa = PBXBuildFile; fileRef = A00000000000000000000002; };
+    A00000000000000000000020 = {isa = PBXBuildFile; fileRef = A00000000000000000000021; };
+    A00000000000000000000021 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullResetSupport.swift; sourceTree = "<group>"; };
     A00000000000000000000018 = {isa = PBXBuildFile; fileRef = A00000000000000000000017; };
     A00000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
     A00000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = CodexQuotaBar-Info.plist; sourceTree = "<group>"; };
     A00000000000000000000004 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodexQuotaBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
     A00000000000000000000017 = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
     A00000000000000000000005 = {isa = PBXGroup; children = (A00000000000000000000006, A00000000000000000000007); sourceTree = "<group>"; };
-    A00000000000000000000006 = {isa = PBXGroup; children = (A00000000000000000000002, A00000000000000000000003, A00000000000000000000017); path = CodexQuotaBar; sourceTree = "<group>"; };
+    A00000000000000000000006 = {isa = PBXGroup; children = (A00000000000000000000002, A00000000000000000000021, A00000000000000000000003, A00000000000000000000017); path = CodexQuotaBar; sourceTree = "<group>"; };
     A00000000000000000000007 = {isa = PBXGroup; children = (A00000000000000000000004); name = Products; sourceTree = "<group>"; };
     A00000000000000000000008 = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000009; buildPhases = (A00000000000000000000010, A00000000000000000000019); buildRules = (); dependencies = (); name = CodexQuotaBar; productName = CodexQuotaBar; productReference = A00000000000000000000004; productType = "com.apple.product-type.application"; };
     A00000000000000000000009 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000011, A00000000000000000000012); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-    A00000000000000000000010 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000001,); runOnlyForDeploymentPostprocessing = 0; };
+    A00000000000000000000010 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000001,A00000000000000000000020,); runOnlyForDeploymentPostprocessing = 0; };
     A00000000000000000000019 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000018,); runOnlyForDeploymentPostprocessing = 0; };
     A00000000000000000000011 = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = CodexQuotaBar/CodexQuotaBar-Info.plist; MACOSX_DEPLOYMENT_TARGET = 14.0; PRODUCT_BUNDLE_IDENTIFIER = local.codex.CodexQuotaBarIconV3; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = macosx; SWIFT_VERSION = 5.0; }; name = Debug; };
     A00000000000000000000012 = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Automatic; DEVELOPMENT_TEAM = ""; INFOPLIST_FILE = CodexQuotaBar/CodexQuotaBar-Info.plist; MACOSX_DEPLOYMENT_TARGET = 14.0; PRODUCT_BUNDLE_IDENTIFIER = local.codex.CodexQuotaBarIconV3; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = macosx; SWIFT_VERSION = 5.0; }; name = Release; };

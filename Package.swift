@@ -8,6 +8,12 @@ let package = Package(
         .executable(name: "CodexQuotaBar", targets: ["CodexQuotaBar"])
     ],
     targets: [
-        .executableTarget(name: "CodexQuotaBar")
-    ]
+        .executableTarget(
+            name: "CodexQuotaBar",
+            path: "Xcode/CodexQuotaBar",
+            exclude: ["CodexQuotaBar-Info.plist", "AppIcon.icns", "AppIcon-80-white.png"],
+            sources: ["AppDelegate.swift", "FullResetSupport.swift"]
+        )
+    ],
+    swiftLanguageModes: [.v5]
 )
